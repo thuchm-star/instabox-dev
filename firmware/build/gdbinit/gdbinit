@@ -1,0 +1,2 @@
+source /mnt/d/instabox/firmware/build/gdbinit/symbols
+source /mnt/d/instabox/firmware/build/gdbinit/connect

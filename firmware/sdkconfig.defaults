@@ -1,0 +1,10 @@
+# Target: ESP32-S3-DevKitC-1
+CONFIG_IDF_TARGET="esp32s3"
+
+# Flash size 8MB (typical for DevKitC-1)
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="8MB"
+
+# PSRAM: tạm thời tắt để tránh lỗi boot khi test
+# Nếu board của bạn chắc chắn có PSRAM và cấu hình chân đúng,
+# hãy bật lại trong menuconfig (Component config -> ESP PSRAM).

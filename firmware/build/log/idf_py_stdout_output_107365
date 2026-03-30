@@ -1,0 +1,18 @@
+Command: ninja all
+[1/11] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/drivers/sensor_i2c.c.obj
+[2/11] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/drivers/sht30.c.obj
+[3/11] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/drivers/shtc3.c.obj
+[4/11] Linking C static library esp-idf/main/libmain.a
+[5/11] Performing build step for 'bootloader'
+[1/1] cd /mnt/d/instabox/firmware/build/bootloader/esp-idf/esptool_py && /home/hothuc/.espressif/python_env/idf5.5_py3.10_env/bin/python /home/hothuc/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /mnt/d/instabox/firmware/build/bootloader/bootloader.bin
+Bootloader binary size 0x5160 bytes. 0x2ea0 bytes (36%) free.
+[6/9] Generating esp-idf/esp_system/ld/sections.ld
+[7/9] Linking CXX executable kiosk_firmware.elf
+[8/9] Generating binary image from built executable
+esptool.py v4.12.dev1
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /mnt/d/instabox/firmware/build/kiosk_firmware.bin
+[9/9] cd /mnt/d/instabox/firmware/build/esp-idf/esptool_py && /home/hothuc/.espressif/python_env/idf5.5_py3.10_env/bin/python /home/hothuc/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /mnt/d/instabox/firmware/build/partition_table/partition-table.bin /mnt/d/instabox/firmware/build/kiosk_firmware.bin
+kiosk_firmware.bin binary size 0x37140 bytes. Smallest app partition is 0x100000 bytes. 0xc8ec0 bytes (78%) free.
