@@ -4,5 +4,5 @@
 # Build output
 firmware/build/
 
-# PDF docs
-*.pdf
+# PDF docs (only root level)
+/*.pdf
