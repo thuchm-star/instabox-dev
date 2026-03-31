@@ -1,6 +1,9 @@
 # Bỏ qua file .md ở thư mục gốc
 /*.md
 
+# Cursor IDE
+.cursor/
+
 # Build output
 firmware/build/
 
