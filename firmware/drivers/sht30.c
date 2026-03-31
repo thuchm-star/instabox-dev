@@ -11,7 +11,7 @@
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "board_config.h"
-#include "sensor_i2c.h"
+#include "drivers/sensor_i2c.h"
 
 #define SHT30_I2C_ADDR         0x44
 #define I2C_MASTER_TIMEOUT_MS  500
@@ -101,6 +101,5 @@ bool sht30_read(float *temperature_c, float *humidity_percent) {
 
     *temperature_c = -45.0f + 175.0f * ((float)raw_t / 65535.0f);
     *humidity_percent = 100.0f * ((float)raw_rh / 65535.0f);
-    ESP_LOGI(TAG, "T=%.2f C, RH=%.2f %%", *temperature_c, *humidity_percent);
     return true;
 }
