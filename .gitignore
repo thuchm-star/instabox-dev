@@ -1,2 +1,8 @@
 # Bỏ qua file .md ở thư mục gốc
 /*.md
+
+# Build output
+firmware/build/
+
+# PDF docs
+*.pdf

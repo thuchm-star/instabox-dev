@@ -43,7 +43,7 @@ extern "C" {
 #define BOARD_GPIO_UART2_RX         18
 #define BOARD_GPIO_LD2420_PRESENCE  6   /* Nối chân OUT/OT2 của LD2420 */
 #define BOARD_UART2_NUM             2
-#define BOARD_UART2_BAUD            256000
+#define BOARD_UART2_BAUD            115200
 
 /* --- UART1: gửi JSON lên RPi5 (TX only, 115200 baud) --- */
 #define BOARD_GPIO_UART1_TX         15
