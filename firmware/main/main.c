@@ -4,7 +4,8 @@
  * Kiến trúc theo GIAM_SAT_KIOSK_BAOCAO_11.md:
  *   Task 1 (Core 1): Đọc LD2420 radar (UART2 frame + GPIO OUT)
  *   Task 2 (Core 1): Đọc SHT30 (I2C, mỗi 2s) + reed switch (10Hz)
- *   Task 3 (Core 0): Đóng gói JSON → gửi UART1 115200 → RPi5
+ *   Task 3A (Core 0): Presence → gửi ngay khi thay đổi (edge-triggered)
+ *   Task 3B (Core 0): Env (temp/humi/door) → gửi mỗi 5 giây
  *
  * KHÔNG dùng WiFi / MQTT. RPi5 xử lý phần mạng.
  */
@@ -18,6 +19,7 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
+#include "esp_timer.h"
 
 #include "driver/i2c.h"
 #include "board_config.h"
@@ -40,6 +42,7 @@ typedef struct {
 
 static sensor_data_t      g_data = {0};
 static SemaphoreHandle_t  g_mtx;
+static SemaphoreHandle_t  g_uart_mtx;  /* bảo vệ UART1 TX — tránh 2 task gửi xen nhau */
 
 /* ── LD2420 UART frame parser ───────────────────── */
 
@@ -169,51 +172,94 @@ static void task_read_env(void *pv)
     }
 }
 
-/* ── Task 3: JSON pack → UART1 → RPi5 (Core 0) ─── */
+/* ── Helpers ─────────────────────────────────────── */
+
+/** Uptime in milliseconds (int64_t, không tràn) */
+static int64_t uptime_ms(void)
+{
+    return esp_timer_get_time() / 1000;
+}
 
 static int round1(float v)
 {
     return (int)(v * 10.0f + (v >= 0 ? 0.5f : -0.5f));
 }
 
-static void task_send_uart(void *pv)
+static void uart_send(const char *buf, int len)
+{
+    if (xSemaphoreTake(g_uart_mtx, pdMS_TO_TICKS(100)) == pdTRUE) {
+        uart_write_bytes(BOARD_UART1_NUM, buf, len);
+        xSemaphoreGive(g_uart_mtx);
+    }
+}
+
+/* ── Task 3A: Radar → gửi khi có thay đổi (Core 0) ─ */
+static void task_send_presence(void *pv)
+{
+    (void)pv;
+
+    bool last_person = false;
+    uint8_t last_zone = 0;
+    char buf[96];
+
+    for (;;) {
+        bool person;
+        uint8_t zone;
+
+        if (xSemaphoreTake(g_mtx, pdMS_TO_TICKS(5)) == pdTRUE) {
+            person = g_data.person;
+            zone   = g_data.zone;
+            xSemaphoreGive(g_mtx);
+        }
+
+        if (person != last_person || zone != last_zone) {
+            last_person = person;
+            last_zone   = zone;
+
+            int len = snprintf(buf, sizeof(buf),
+                "{\"type\":\"presence\",\"person\":%s,\"zone\":%u,\"ts\":%lld}\n",
+                person ? "true" : "false",
+                (unsigned)zone,
+                (long long)uptime_ms());
+
+            uart_send(buf, len);
+        }
+
+        led_set(person);
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+/* ── Task 3B: Env → gửi mỗi 5 giây (Core 0) ──────── */
+static void task_send_env(void *pv)
 {
     (void)pv;
 
     char buf[128];
 
     for (;;) {
-        sensor_data_t snap;
+        float temp, humi;
+        bool door_open, door_changed;
+
         if (xSemaphoreTake(g_mtx, pdMS_TO_TICKS(10)) == pdTRUE) {
-            snap = g_data;
+            temp         = g_data.temp;
+            humi         = g_data.humi;
+            door_open    = g_data.door_open;
+            door_changed = g_data.door_changed;
             xSemaphoreGive(g_mtx);
         }
 
-        /*
-         * JSON format:
-         * {"person":true,"zone":2,"temp":28.5,"humi":65.2,
-         *  "door_open":false,"door_changed":false,"ts":12450}
-         *
-         * door_open:    trạng thái hiện tại (đã debounce)
-         * door_changed: true khi vừa chuyển trạng thái (edge) — RPi5 dùng để emit event
-         */
         int len = snprintf(buf, sizeof(buf),
-            "{\"person\":%s,\"zone\":%u,\"temp\":%.1f,\"humi\":%.1f,"
-            "\"door_open\":%s,\"door_changed\":%s,\"ts\":%lu}\n",
-            snap.person       ? "true" : "false",
-            (unsigned)snap.zone,
-            (double)(round1(snap.temp) / 10.0f),
-            (double)(round1(snap.humi) / 10.0f),
-            snap.door_open    ? "true" : "false",
-            snap.door_changed ? "true" : "false",
-            (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS));
+            "{\"type\":\"env\",\"temp\":%.1f,\"humi\":%.1f,"
+            "\"door_open\":%s,\"door_changed\":%s,\"ts\":%lld}\n",
+            (double)(round1(temp) / 10.0f),
+            (double)(round1(humi) / 10.0f),
+            door_open    ? "true" : "false",
+            door_changed ? "true" : "false",
+            (long long)uptime_ms());
 
-        uart_write_bytes(BOARD_UART1_NUM, buf, len);
-
-        /* LED phản hồi: bật khi có người */
-        led_set(snap.person);
-
-        vTaskDelay(pdMS_TO_TICKS(500));
+        uart_send(buf, len);
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
 
@@ -298,12 +344,14 @@ void app_main(void)
     ESP_LOGI(TAG, "Hardware initialized — 3 sensor tasks starting");
 
     /* Mutex */
-    g_mtx = xSemaphoreCreateMutex();
+    g_mtx      = xSemaphoreCreateMutex();
+    g_uart_mtx = xSemaphoreCreateMutex();
 
-    /* 3 task cảm biến + 1 watchdog, matching GIAM_SAT_KIOSK_BAOCAO_11.md */
-    xTaskCreatePinnedToCore(task_read_radar, "radar",    4096, NULL, 5, NULL, 1);
-    xTaskCreatePinnedToCore(task_read_env,   "env",      3072, NULL, 4, NULL, 1);
-    xTaskCreatePinnedToCore(task_send_uart,  "send_rpi", 4096, NULL, 3, NULL, 0);
+    /* 2 task đọc (Core 1) + 2 task gửi (Core 0) + watchdog */
+    xTaskCreatePinnedToCore(task_read_radar,    "radar",    4096, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore(task_read_env,      "env",      3072, NULL, 4, NULL, 1);
+    xTaskCreatePinnedToCore(task_send_presence, "tx_pres",  3072, NULL, 3, NULL, 0);
+    xTaskCreatePinnedToCore(task_send_env,      "tx_env",   3072, NULL, 3, NULL, 0);
     xTaskCreate(task_watchdog, "wdt", 1024, NULL, 6, NULL);
 
     ESP_LOGI(TAG, "All tasks running. JSON output on UART1 (GPIO %d) @ %d baud",
