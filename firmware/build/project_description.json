@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "kiosk_firmware",
-    "project_version":    "1",
+    "project_version":    "c2fbcab-dirty",
     "project_path":       "/mnt/d/instabox/firmware",
     "idf_path":           "/home/hothuc/esp/esp-idf",
     "build_dir":          "/mnt/d/instabox/firmware/build",
@@ -1240,7 +1240,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "/mnt/d/instabox/firmware/build/esp-idf/main/libmain.a",
-            "sources": [ "/mnt/d/instabox/firmware/main/main.c", "/mnt/d/instabox/firmware/drivers/sensor_i2c.c", "/mnt/d/instabox/firmware/drivers/sht30.c", "/mnt/d/instabox/firmware/drivers/radar_ld2420.c", "/mnt/d/instabox/firmware/drivers/reed_switch.c", "/mnt/d/instabox/firmware/drivers/led.c" ],
+            "sources": [ "/mnt/d/instabox/firmware/main/main.c", "/mnt/d/instabox/firmware/drivers/radar_ld2420.c", "/mnt/d/instabox/firmware/drivers/led.c" ],
             "include_dirs": [ ".", ".." ]
         },
         "mbedtls": {
