@@ -25,7 +25,16 @@ static bool s_initialized;
 static char s_line_buf[LINE_BUF_SIZE];
 static int  s_line_pos;
 
-static radar_ld2420_state_t s_state = { .person = false, .range_cm = -1 };
+static radar_ld2420_state_t s_state = {
+    .person = false, .range_cm = -1, .health = RADAR_NOT_INIT
+};
+
+/* ── Health tracking ─────────────────────────────── */
+
+#define HEALTH_TIMEOUT_MS     30000
+
+static uint32_t s_uart_valid_count;
+static TickType_t s_last_uart_valid_tick;
 
 /* ── Init ────────────────────────────────────────── */
 
@@ -35,7 +44,7 @@ void radar_ld2420_init(void)
         .pin_bit_mask = (1ULL << BOARD_GPIO_LD2420_PRESENCE),
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
         .intr_type = GPIO_INTR_DISABLE,
     };
     gpio_config(&io);
@@ -70,13 +79,16 @@ bool radar_ld2420_person_present(void)
 
 static void parse_line(const char *line)
 {
-    if (strcmp(line, "ON") == 0) {
-        s_state.person = true;
-    } else if (strcmp(line, "OFF") == 0) {
-        s_state.person = false;
-        s_state.range_cm = 0;
+    bool valid = false;
+    if (strcmp(line, "ON") == 0 || strcmp(line, "OFF") == 0) {
+        valid = true;
     } else if (strncmp(line, "Range ", 6) == 0) {
         s_state.range_cm = atoi(&line[6]);
+        valid = true;
+    }
+    if (valid) {
+        s_uart_valid_count++;
+        s_last_uart_valid_tick = xTaskGetTickCount();
     }
 }
 
@@ -102,13 +114,22 @@ bool radar_ld2420_poll(radar_ld2420_state_t *out)
         }
     }
 
-    /* Fallback GPIO khi chưa nhận UART text */
-    if (n <= 0 && s_state.range_cm < 0) {
-        s_state.person = radar_ld2420_person_present();
-    }
+    /* GPIO = presence, UART = range bonus */
+    s_state.person = radar_ld2420_person_present();
+    if (!s_state.person) s_state.range_cm = 0;
+
+    /* Health */
+    TickType_t now = xTaskGetTickCount();
+    uint32_t since_ms = (now - s_last_uart_valid_tick) * portTICK_PERIOD_MS;
+    if (s_uart_valid_count > 0 && since_ms < HEALTH_TIMEOUT_MS)
+        s_state.health = RADAR_OK;
+    else
+        s_state.health = RADAR_GPIO_ONLY;
 
     *out = s_state;
-    return (s_state.person != prev.person || s_state.range_cm != prev.range_cm);
+    return (s_state.person != prev.person ||
+            s_state.range_cm != prev.range_cm ||
+            s_state.health != prev.health);
 }
 
 /* ── Command protocol (binary) ───────────────────── */

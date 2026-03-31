@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "kiosk_firmware",
-    "project_version":    "112288d-dirty",
+    "project_version":    "18c80d9-dirty",
     "project_path":       "/mnt/d/instabox/firmware",
     "idf_path":           "/home/hothuc/esp/esp-idf",
     "build_dir":          "/mnt/d/instabox/firmware/build",
@@ -1240,7 +1240,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "/mnt/d/instabox/firmware/build/esp-idf/main/libmain.a",
-            "sources": [ "/mnt/d/instabox/firmware/main/main.c", "/mnt/d/instabox/firmware/drivers/radar_ld2420.c", "/mnt/d/instabox/firmware/drivers/led.c" ],
+            "sources": [ "/mnt/d/instabox/firmware/main/main.c", "/mnt/d/instabox/firmware/drivers/radar_ld2420.c", "/mnt/d/instabox/firmware/drivers/led.c", "/mnt/d/instabox/firmware/tasks/task_radar.c" ],
             "include_dirs": [ ".", ".." ]
         },
         "mbedtls": {

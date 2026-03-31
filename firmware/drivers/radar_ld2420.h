@@ -3,24 +3,25 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum {
+    RADAR_OK,               /* UART text hoat dong, data hop le */
+    RADAR_GPIO_ONLY,        /* Chi co GPIO, UART khong nhan data */
+    RADAR_DISCONNECTED,     /* Khong co tin hieu (GPIO=0, UART=0) */
+    RADAR_NOT_INIT,
+} radar_health_t;
+
 typedef struct {
-    bool person;
-    int  range_cm;      /* -1 = chưa có data, 0 = OFF, >0 = khoảng cách */
+    bool          person;
+    int           range_cm;     /* -1 = chua co data, 0 = OFF, >0 = khoang cach */
+    radar_health_t health;
 } radar_ld2420_state_t;
 
-/* Init GPIO OUT + UART2 */
 void radar_ld2420_init(void);
-
-/* Đọc trực tiếp chân GPIO OUT (HIGH = có người) */
 bool radar_ld2420_person_present(void);
 
-/* Đọc 1 byte UART, parse text "ON"/"OFF"/"Range XXX". Gọi liên tục trong loop.
- * Trả về true khi state thay đổi. */
+/* Poll UART text + GPIO. Goi lien tuc trong loop.
+ * Tra ve true khi state thay doi. */
 bool radar_ld2420_poll(radar_ld2420_state_t *state);
 
-/* Command protocol: đảm bảo LD2420 ở normal mode (thoát command mode nếu bị kẹt) */
 void radar_ld2420_ensure_normal_mode(void);
-
-/* Command protocol: đọc và in config ra log (version, gates, thresholds).
- * Trả về true nếu đọc thành công. */
 bool radar_ld2420_print_config(void);
