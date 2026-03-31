@@ -1,2 +1,0 @@
-bật nguồn -> lấy SSID và pass wifi trong nvs-> nếu không có thông tin, hoặc thực hiện kết nối thất bại thì bật chế độ AP mode có địa chỉ truy cập web để kết nối wifi (web có danh sách wifi xung quanh, chọn wifi và nhập mật khẩu để kết nối)-> kết nối wifi ở STA mode -> thực hiện reconect khi mất kết nối nếu sau 3 lần thử reconect không thành công thì bật AP mode 
-lưu ý: set 1 nút nhấn để bật AP bất kì lúc nào
