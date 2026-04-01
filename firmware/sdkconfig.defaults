@@ -8,3 +8,7 @@ CONFIG_ESPTOOLPY_FLASHSIZE="8MB"
 # PSRAM: tạm thời tắt để tránh lỗi boot khi test
 # Nếu board của bạn chắc chắn có PSRAM và cấu hình chân đúng,
 # hãy bật lại trong menuconfig (Component config -> ESP PSRAM).
+
+# LD2420 UART command test at boot (Instabox firmware menu)
+CONFIG_INSTABOX_LD2420_CMD_TEST=n
+CONFIG_INSTABOX_LD2420_CMD_TEST_REBOOT=n

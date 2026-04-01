@@ -1,0 +1,15 @@
+menu "Instabox firmware"
+
+    config INSTABOX_LD2420_CMD_TEST
+        bool "Run LD2420 UART command test suite at boot"
+        default n
+        help
+            After ld2420_init(), runs read/write/version/set/log tests and logs
+            esp_err_t plus parsed data. Requires LD2420 on UART2 (TX/RX).
+
+    config INSTABOX_LD2420_CMD_TEST_REBOOT
+        bool "Include ld2420_reboot() at end of suite (resets radar module only)"
+        depends on INSTABOX_LD2420_CMD_TEST
+        default n
+
+endmenu

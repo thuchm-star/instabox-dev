@@ -596,6 +596,12 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
+# Instabox firmware
+#
+# CONFIG_INSTABOX_LD2420_CMD_TEST is not set
+# end of Instabox firmware
+
+#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEBUG=y

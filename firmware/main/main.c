@@ -12,6 +12,7 @@
 #include "drivers/radar_ld2420.h"
 #include "drivers/led.h"
 #include "tasks/task_radar.h"
+#include "tests/test_ld2420_commands.h"
 
 static const char *TAG = "main";
 
@@ -23,7 +24,10 @@ void app_main(void)
         nvs_flash_init();
     }
 
-    radar_ld2420_init();
+    ld2420_init();
+    /* HIL command suite: enable CONFIG_INSTABOX_LD2420_CMD_TEST in menuconfig */
+    ld2420_run_all_command_tests();
+
     led_init();
 
     printf("\n\n");
