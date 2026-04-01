@@ -579,6 +579,8 @@
     "IDF_TARGET_ESP32S3": true,
     "IDF_TOOLCHAIN": "gcc",
     "IDF_TOOLCHAIN_GCC": true,
+    "INSTABOX_LD2420_CMD_TEST": false,
+    "INSTABOX_RADAR_CONSOLE": true,
     "LCD_ENABLE_DEBUG_LOG": false,
     "LCD_RGB_ISR_IRAM_SAFE": false,
     "LCD_RGB_RESTART_IN_VSYNC": false,

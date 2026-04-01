@@ -598,6 +598,7 @@ CONFIG_PARTITION_TABLE_MD5=y
 #
 # Instabox firmware
 #
+CONFIG_INSTABOX_RADAR_CONSOLE=y
 # CONFIG_INSTABOX_LD2420_CMD_TEST is not set
 # end of Instabox firmware
 

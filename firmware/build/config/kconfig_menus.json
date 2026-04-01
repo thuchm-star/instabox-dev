@@ -6824,6 +6824,45 @@
     {
         "children": [
             {
+                "children": [],
+                "depends_on": null,
+                "help": "Type commands in idf.py monitor:\n  radar read\n  radar timeout 10\n  radar range 0 8",
+                "id": "INSTABOX_RADAR_CONSOLE",
+                "name": "INSTABOX_RADAR_CONSOLE",
+                "range": null,
+                "title": "Enable runtime radar CLI on monitor UART",
+                "type": "bool"
+            },
+            {
+                "children": [
+                    {
+                        "children": [],
+                        "depends_on": "INSTABOX_LD2420_CMD_TEST",
+                        "help": null,
+                        "id": "INSTABOX_LD2420_CMD_TEST_REBOOT",
+                        "name": "INSTABOX_LD2420_CMD_TEST_REBOOT",
+                        "range": null,
+                        "title": "Include ld2420_reboot() at end of suite (resets radar module only)",
+                        "type": "bool"
+                    }
+                ],
+                "depends_on": null,
+                "help": "After ld2420_init(), runs read/write/version/set/log tests and logs\nesp_err_t plus parsed data. Requires LD2420 on UART2 (TX/RX).",
+                "id": "INSTABOX_LD2420_CMD_TEST",
+                "name": "INSTABOX_LD2420_CMD_TEST",
+                "range": null,
+                "title": "Run LD2420 UART command test suite at boot",
+                "type": "bool"
+            }
+        ],
+        "depends_on": null,
+        "id": "instabox-firmware",
+        "title": "Instabox firmware",
+        "type": "menu"
+    },
+    {
+        "children": [
+            {
                 "children": [
                     {
                         "children": [],
