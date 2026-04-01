@@ -1,5 +1,14 @@
 menu "Instabox firmware"
 
+    config INSTABOX_RADAR_CONSOLE
+        bool "Enable runtime radar CLI on monitor UART"
+        default y
+        help
+            Type commands in idf.py monitor:
+              radar read
+              radar timeout 10
+              radar range 0 8
+
     config INSTABOX_LD2420_CMD_TEST
         bool "Run LD2420 UART command test suite at boot"
         default n

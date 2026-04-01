@@ -13,6 +13,7 @@
 #include "drivers/led.h"
 #include "tasks/task_radar.h"
 #include "tests/test_ld2420_commands.h"
+#include "console/radar_console.h"
 
 static const char *TAG = "main";
 
@@ -37,6 +38,10 @@ void app_main(void)
     ESP_LOGW(TAG, "  UART2 TX : %d   RX : %d   BAUD : %d",
              BOARD_GPIO_UART2_TX, BOARD_GPIO_UART2_RX, BOARD_UART2_BAUD);
     ESP_LOGW(TAG, "========================================");
+
+    if (radar_console_start() != ESP_OK) {
+        ESP_LOGW(TAG, "Radar CLI not started");
+    }
 
     task_radar_start();
 }

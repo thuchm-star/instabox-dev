@@ -3,4 +3,5 @@ idf_component_register(SRCS "main.c"
                     "../drivers/led.c"
                     "../tasks/task_radar.c"
                     "../tests/test_ld2420_commands.c"
+                    "../console/radar_console.c"
                     INCLUDE_DIRS "." "..")
