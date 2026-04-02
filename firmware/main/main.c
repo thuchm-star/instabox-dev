@@ -4,9 +4,10 @@
  * app_main: khởi tạo hardware, start các task.
  * Mỗi task nằm trong firmware/tasks/
  */
-#include <stdio.h>
 #include "nvs_flash.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #include "board_config.h"
 #include "drivers/radar_ld2420.h"
@@ -31,7 +32,7 @@ void app_main(void)
 
     led_init();
 
-    printf("\n\n");
+    /* Use ESP_LOG only here — libc printf() on VFS UART can block startup if TX backs up. */
     ESP_LOGW(TAG, "========================================");
     ESP_LOGW(TAG, "  RADAR LD2420 — TEST NHAN DIEN NGUOI");
     ESP_LOGW(TAG, "  GPIO OUT : %d", BOARD_GPIO_LD2420_PRESENCE);
@@ -39,9 +40,11 @@ void app_main(void)
              BOARD_GPIO_UART2_TX, BOARD_GPIO_UART2_RX, BOARD_UART2_BAUD);
     ESP_LOGW(TAG, "========================================");
 
+    /* Radar poll loop first so LD2420 UART stream is drained by one owner; then CLI. */
+    task_radar_start();
+    vTaskDelay(pdMS_TO_TICKS(100));
+
     if (radar_console_start() != ESP_OK) {
         ESP_LOGW(TAG, "Radar CLI not started");
     }
-
-    task_radar_start();
 }

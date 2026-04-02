@@ -71,6 +71,16 @@ HLK-LD2420 giao tiếp qua **UART** với baud rate mặc định **115200**, 8N
 | ... | ... | ... | ... |
 | Maintain threshold gate 15 | `0x002F` | Ngưỡng duy trì | 0 ~ 65535 |
 
+### UART output mode (lệnh `0x0012` — ghi system parameter)
+
+Một số tài liệu / triển khai mở (ví dụ ESPHome `ld2420`) mô tả thêm lệnh **ghi tham số hệ thống** để chọn định dạng stream ở normal mode:
+
+| Command | Value | Payload (sau command 2B) | Ý nghĩa |
+|---------|:-----:|---------------------------|---------|
+| Write system param | `0x0012` | `00 00` + `mode` 2B LE + `00 00` | `mode = 0x0064`: text (`ON`/`OFF`/`Range`); `mode = 0x0004`: khung energy `F4 F3 F2 F1`… |
+
+Phản hồi thành công: return cmd `0x0112`, status `00 00`. Cần **mở command mode** trước và **đóng** sau (giống các lệnh cấu hình khác). Firmware cũ có thể không hỗ trợ — khi đó chỉ còn cách đổi mode trong tool PC của hãng.
+
 **Công thức khoảng cách**: Mỗi gate tương ứng khoảng **0.7 mét**. Ví dụ: max gate = 12 → khoảng cách tối đa ≈ 8.4m.
 
 **Trigger vs Maintain**:

@@ -51,6 +51,7 @@ static const uint8_t HDR_NRG[] = {0xF4, 0xF3, 0xF2, 0xF1};
 #define CMD_REBOOT      0x0068
 #define CMD_READ        0x0008
 #define CMD_WRITE       0x0007
+#define CMD_WRITE_SYS   0x0012      /* UART output mode (simple vs energy), ESPHome-aligned */
 
 /* Parameter names */
 #define PAR_MIN_GATE    0x0000
@@ -106,12 +107,39 @@ static void on_text(const char *ln)
 {
     bool ok = false;
     if (strcmp(ln, "ON") == 0) {
+        /* No distance: approximate near-field proxy for text-only streams */
+        if (s_state.gate_energy[0] < 3500U) {
+            s_state.gate_energy[0] = 3500U;
+        }
         ok = true;
     } else if (strcmp(ln, "OFF") == 0) {
         s_state.range_cm = 0;
+        /* Text-only mode: no binary energy frames; clear proxy energies */
+        memset(s_state.gate_energy, 0, sizeof(s_state.gate_energy));
         ok = true;
     } else if (strncmp(ln, "Range ", 6) == 0) {
-        s_state.range_cm = atoi(&ln[6]);
+        int r = atoi(&ln[6]);
+        s_state.range_cm = r;
+        /* Text UART does not carry per-gate energy. Seed a crude proxy at the
+         * range gate so cal_thres / poll see non-zero data (vendor cal uses
+         * binary energy mode; see docs). */
+        if (r > 0) {
+            int g = (r - 1) / LD2420_GATE_CM;
+            if (g < 0) {
+                g = 0;
+            }
+            if (g >= LD2420_NUM_GATES) {
+                g = LD2420_NUM_GATES - 1;
+            }
+            uint32_t amp32 = 4000U + (uint32_t)r * 8U;
+            if (amp32 > 65535U) {
+                amp32 = 65535U;
+            }
+            uint16_t amp = (uint16_t)amp32;
+            if (s_state.gate_energy[g] < amp) {
+                s_state.gate_energy[g] = amp;
+            }
+        }
         ok = true;
     }
     if (ok) { s_uart_cnt++; s_uart_tick = xTaskGetTickCount(); }
@@ -330,6 +358,23 @@ static bool cm_read1(uint16_t name, uint32_t *val)
     *val = (uint32_t)d[0] | ((uint32_t)d[1] << 8)
          | ((uint32_t)d[2] << 16) | ((uint32_t)d[3] << 24);
     return true;
+}
+
+/*
+ * System / UART mode write: cmd 0x0012, payload 6B LE:
+ *   00 00 = mode register, mode u16 (0x0064 simple, 0x0004 energy), 00 00 padding
+ */
+static bool cm_write_sys_uart_mode(uint16_t mode)
+{
+    uint8_t par[6] = {
+        0x00, 0x00,
+        (uint8_t)(mode & 0xFF), (uint8_t)((mode >> 8) & 0xFF),
+        0x00, 0x00
+    };
+    uint8_t fr[24], rsp[RESP_MAX];
+    int fl = build_frame(fr, CMD_WRITE_SYS, par, 6), rl;
+    if (!transact(fr, fl, rsp, sizeof(rsp), &rl)) return false;
+    return parse_resp(rsp, rl, CMD_WRITE_SYS, NULL, NULL);
 }
 
 static bool cm_write1(uint16_t name, uint32_t val)
@@ -678,9 +723,33 @@ esp_err_t ld2420_reboot(void)
     return ESP_OK;
 }
 
+esp_err_t ld2420_set_uart_output_mode(uint16_t mode)
+{
+    if (!s_init) return ESP_ERR_INVALID_STATE;
+    if (mode != LD2420_UART_OUT_SIMPLE && mode != LD2420_UART_OUT_ENERGY)
+        return ESP_ERR_INVALID_ARG;
+
+    esp_err_t err = session_begin();
+    if (err != ESP_OK) return err;
+
+    bool ok = cm_write_sys_uart_mode(mode);
+    session_end();
+    if (ok) {
+        ESP_LOGI(TAG, "UART output mode set to 0x%04x", (unsigned)mode);
+    } else {
+        ESP_LOGW(TAG, "UART output mode write failed (0x%04x)", (unsigned)mode);
+    }
+    return ok ? ESP_OK : ESP_FAIL;
+}
+
 /* ═══════════════════════════════════════════════════════
  *  Public — Diagnostics
  * ═══════════════════════════════════════════════════════ */
+
+void ld2420_get_state(ld2420_state_t *out)
+{
+    if (out) *out = s_state;
+}
 
 esp_err_t ld2420_log_config(void)
 {

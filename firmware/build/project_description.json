@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "kiosk_firmware",
-    "project_version":    "1faaa4d-dirty",
+    "project_version":    "6ed27a5-dirty",
     "project_path":       "/mnt/d/instabox/firmware",
     "idf_path":           "/home/hothuc/esp/esp-idf",
     "build_dir":          "/mnt/d/instabox/firmware/build",

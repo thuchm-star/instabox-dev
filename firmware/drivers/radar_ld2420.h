@@ -71,9 +71,19 @@ esp_err_t ld2420_set_gate_sensitivity(uint8_t gate,
                                       uint32_t hold_val);
 esp_err_t ld2420_reboot(void);
 
+/* UART normal-mode data format (command 0x0012, see vendor / ESPHome LD2420). */
+#define LD2420_UART_OUT_SIMPLE  0x0064u  /* ON/OFF/Range text */
+#define LD2420_UART_OUT_ENERGY  0x0004u  /* binary F4 F3 F2 F1 … energy frames */
+
+esp_err_t ld2420_set_uart_output_mode(uint16_t mode);
+
 /* ── Diagnostics ────────────────────────────────────── */
 
 esp_err_t ld2420_log_config(void);
+
+/* Get latest state snapshot (filled by task_radar's ld2420_poll loop).
+ * Safe to call from any task — reads cached state, no UART access. */
+void ld2420_get_state(ld2420_state_t *out);
 
 #ifdef __cplusplus
 }

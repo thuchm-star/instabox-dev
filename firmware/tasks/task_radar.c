@@ -9,6 +9,7 @@
 #include "tasks/task_radar.h"
 
 static const char *TAG = "task_radar";
+static TickType_t s_last_range_log_tick;
 
 /* ── Tunables ──────────────────────────────────────── *
  *  LD2420 already applies "absence report delay" (param 0x0004, seconds)
@@ -49,9 +50,14 @@ static void default_handler(const radar_event_t *evt)
         break;
 
     case RADAR_EVT_RANGE_UPDATE:
-        if (evt->range_cm > 0)
-            ESP_LOGI(TAG, "    range update: %d cm (%.1f m)",
-                     evt->range_cm, evt->range_cm / 100.0f);
+        if (evt->range_cm > 0) {
+            TickType_t now = xTaskGetTickCount();
+            if ((now - s_last_range_log_tick) * portTICK_PERIOD_MS >= 1000) {
+                s_last_range_log_tick = now;
+                ESP_LOGI(TAG, "    range update: %d cm (%.1f m)",
+                         evt->range_cm, evt->range_cm / 100.0f);
+            }
+        }
         break;
 
     case RADAR_EVT_HEARTBEAT:
