@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<AppConfig
+	LANGUAGE="ENG"
+	BaudRate="115200"
+	RadarConfigFile="mau.xml">
+	<ParamSetting
+		GateMax="5"
+		ObjectDisappearDelayTime="1"
+		TriggerGate0Threshold="44.78"
+		HoldGate0Threshold="43.23"
+		TriggerGate1Threshold="40.76"
+		HoldGate1Threshold="39.21"
+		TriggerGate2Threshold="31.17"
+		HoldGate2Threshold="29.62"
+		TriggerGate3Threshold="27.25"
+		HoldGate3Threshold="25.71"
+		TriggerGate4Threshold="26.45"
+		HoldGate4Threshold="24.90"
+		TriggerGate5Threshold="26.11"
+		HoldGate5Threshold="24.56"
+		TriggerGate6Threshold="26.00"
+		HoldGate6Threshold="24.46"
+		TriggerGate7Threshold="25.97"
+		HoldGate7Threshold="24.42"
+		TriggerGate8Threshold="25.91"
+		HoldGate8Threshold="24.36"
+		TriggerGate9Threshold="25.76"
+		HoldGate9Threshold="24.22"
+		TriggerGate10Threshold="25.59"
+		HoldGate10Threshold="24.03"
+		TriggerGate11Threshold="25.38"
+		HoldGate11Threshold="23.82"
+		TriggerGate12Threshold="24.93"
+		HoldGate12Threshold="23.38"
+		TriggerGate13Threshold="24.42"
+		HoldGate13Threshold="22.88"
+		TriggerGate14Threshold="24.25"
+		HoldGate14Threshold="22.70"
+		TriggerGate15Threshold="24.18"
+		HoldGate15Threshold="22.65" />
+	<ObjectInfo
+		TriggerSensingScale="5.000000"
+		HoldSensingScale="3.500000"
+		EnergyWaveWnd_ValueAutoScale="0"
+		EnergyWaveWnd_ValueDisplayMax="100"
+		EnergyWaveWnd_WaveLineWidth="5"
+		DistanceWaveWnd_WaveLineWidth="5" />
+	<DataProcess
+		ScanTime="20"
+		SaveFilePath="E:\Radar\Release\  ʾ    \XenD101MM01HP02Tool\SaveData"
+		EnergyWaveWnd_ValueAutoScale="0"
+		EnergyWaveWnd_ValueDisplayMax="100"
+		EnergyWaveWnd_WaveLineWidth="5"
+		DistanceWaveWnd_WaveLineWidth="5" />
+	<Download
+		DownloadFilePath="E:\HLK   ϻ   \ ״ ģ      \2420\renzheng03.bin" />
+</AppConfig>
