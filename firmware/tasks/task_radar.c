@@ -10,16 +10,19 @@
 
 static const char *TAG = "task_radar";
 static TickType_t s_last_range_log_tick;
+static TickType_t s_last_range_emit_tick;
 
 /* ── Tunables ──────────────────────────────────────── *
  *  LD2420 already applies "absence report delay" (param 0x0004, seconds)
  *  in firmware — that is the main hold-after-loss. Software debounce here
  *  is only to filter UART/GPIO glitches, not to duplicate that delay. */
 
-#define POLL_MS             50      /* sensor read interval             */
-#define DEBOUNCE_ENTER_MS   200     /* anti-glitch before ENTER         */
-#define DEBOUNCE_LEAVE_MS   100     /* anti-glitch after module says go  */
-#define HEARTBEAT_MS        10000   /* periodic status report           */
+/** Đọc radar + log terminal / emit RANGE_UPDATE tối đa 5 Hz */
+#define RADAR_REPORT_PERIOD_MS 200
+#define POLL_MS                RADAR_REPORT_PERIOD_MS
+#define DEBOUNCE_ENTER_MS      200     /* anti-glitch before ENTER         */
+#define DEBOUNCE_LEAVE_MS      100     /* anti-glitch after module says go  */
+#define HEARTBEAT_MS           RADAR_REPORT_PERIOD_MS   /* [hb] mỗi 0,2 s   */
 
 /* ── Callback ──────────────────────────────────────── */
 
@@ -89,8 +92,8 @@ static void task_radar_fn(void *pv)
     ld2420_ensure_normal_mode();
     ld2420_log_config();
     ld2420_ensure_normal_mode();
-    ESP_LOGI(TAG, "Radar ready: glitch filter enter %d ms / leave %d ms; absence delay = LD2420 timeout (read via ld2420_log_config)",
-             DEBOUNCE_ENTER_MS, DEBOUNCE_LEAVE_MS);
+    ESP_LOGI(TAG, "Radar ready: report every %d ms; glitch enter %d ms / leave %d ms",
+             RADAR_REPORT_PERIOD_MS, DEBOUNCE_ENTER_MS, DEBOUNCE_LEAVE_MS);
 
     if (!s_cb) task_radar_set_callback(default_handler);
 
@@ -123,6 +126,7 @@ static void task_radar_fn(void *pv)
                 deb = DEB_PRESENT;
                 state_time = now;
                 last_range = raw.range_cm;
+                s_last_range_emit_tick = now;
                 radar_event_t ev = {
                     .type     = RADAR_EVT_PERSON_ENTER,
                     .present  = true,
@@ -137,15 +141,18 @@ static void task_radar_fn(void *pv)
             if (!raw_present) {
                 deb = DEB_MAYBE_LEAVE;
                 deb_start = now;
-            } else if (raw.range_cm != last_range && raw.range_cm > 0) {
-                last_range = raw.range_cm;
-                radar_event_t ev = {
-                    .type     = RADAR_EVT_RANGE_UPDATE,
-                    .present  = true,
-                    .range_cm = raw.range_cm,
-                    .hold_ms  = (now - state_time) * portTICK_PERIOD_MS,
-                };
-                emit(&ev);
+            } else if (raw.range_cm > 0 && raw.range_cm != last_range) {
+                if ((now - s_last_range_emit_tick) * portTICK_PERIOD_MS >= RADAR_REPORT_PERIOD_MS) {
+                    s_last_range_emit_tick = now;
+                    last_range = raw.range_cm;
+                    radar_event_t ev = {
+                        .type     = RADAR_EVT_RANGE_UPDATE,
+                        .present  = true,
+                        .range_cm = raw.range_cm,
+                        .hold_ms  = (now - state_time) * portTICK_PERIOD_MS,
+                    };
+                    emit(&ev);
+                }
             }
             break;
 

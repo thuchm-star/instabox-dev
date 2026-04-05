@@ -35,7 +35,8 @@ static const char *TAG = "ld2420";
  * ═══════════════════════════════════════════════════════ */
 
 #define UART_PORT         BOARD_UART2_NUM
-#define UART_RX_BUF       1024
+/* RX lớn hơn: khi radar CLI giữ mutex lâu, luồng LD2420 vẫn vào ring — tràn dễ lệch frame. */
+#define UART_RX_BUF       2048
 #define UART_TX_BUF       256
 #define GPIO_PRESENCE     BOARD_GPIO_LD2420_PRESENCE
 
@@ -97,9 +98,20 @@ static uint8_t s_pbuf[64];
 static int     s_ppos, s_pexp;
 static int     s_nhdr;                  /* energy header match index */
 
-#define LINE_MAX 64
-static char    s_line[LINE_MAX];
+#define LD2420_TEXT_LINE_MAX 64
+static char    s_line[LD2420_TEXT_LINE_MAX];
 static int     s_lpos;
+
+/* Bỏ nửa frame sau command mode / flush — tránh byte nhị phân đẩy vào text → “rác” trên UART. */
+static void stream_parser_reset(void)
+{
+    s_ps   = PS_IDLE;
+    s_nhdr = 0;
+    s_ppos = 0;
+    s_pexp = 0;
+    s_lpos = 0;
+    memset(s_line, 0, sizeof(s_line));
+}
 
 /* ── text: ON / OFF / Range NNN ────────────────────── */
 
@@ -213,7 +225,7 @@ static void feed(uint8_t c)
                 s_lpos = 0;
             }
         } else if (c >= 0x20 && c <= 0x7E) {
-            if (s_lpos < LINE_MAX - 1)
+            if (s_lpos < LD2420_TEXT_LINE_MAX - 1)
                 s_line[s_lpos++] = (char)c;
         }
         break;
@@ -468,6 +480,8 @@ static esp_err_t session_begin(void)
     if (!cm_open()) {
         ESP_LOGW(TAG, "Cannot enter command mode (TX wired?)");
         cm_close();
+        uart_flush_input(UART_PORT);
+        stream_parser_reset();
         xSemaphoreGive(s_mtx);
         return ESP_ERR_TIMEOUT;
     }
@@ -478,6 +492,7 @@ static void session_end(void)
 {
     cm_close();
     uart_flush_input(UART_PORT);
+    stream_parser_reset();
     xSemaphoreGive(s_mtx);
 }
 
@@ -517,6 +532,8 @@ esp_err_t ld2420_init(void)
 
     e = uart_driver_install(UART_PORT, UART_RX_BUF, UART_TX_BUF, 0, NULL, 0);
     if (e != ESP_OK) { ESP_LOGE(TAG, "UART install fail"); return e; }
+
+    stream_parser_reset();
 
     s_mtx = xSemaphoreCreateMutex();
     if (!s_mtx) { ESP_LOGE(TAG, "Mutex alloc fail"); return ESP_ERR_NO_MEM; }
@@ -577,6 +594,7 @@ void ld2420_ensure_normal_mode(void)
     cm_close();
     vTaskDelay(pdMS_TO_TICKS(200));
     uart_flush_input(UART_PORT);
+    stream_parser_reset();
     xSemaphoreGive(s_mtx);
 }
 

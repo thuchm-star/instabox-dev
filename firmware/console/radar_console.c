@@ -22,8 +22,15 @@ static const char *TAG = "radar_cli";
 #define CLI_PRIO  3
 #define CLI_MAX_LINE 128
 #define CAL_SAMPLE_MS 100
-#define CAL_DEF_TRIG_MARGIN 600
-#define CAL_DEF_HOLD_MARGIN 300
+/*
+ * Cal: trig/hold = max_energy + margin (nền phòng trống).
+ * Trigger > hold → tạo vùng trễ (hysteresis) theo đơn vị năng lượng gate: năng lượng phải vượt
+ * trigger để “vào”, xuống dưới hold mới “ra” (theo FSM module). Khoảng (trig_margin - hold_margin)
+ * quá nhỏ → dao động nhiễu dễ làm nhấp nháy; quá lớn → cần tụt năng lượng nhiều mới hết báo.
+ */
+#define CAL_DEF_TRIG_MARGIN 5000
+#define CAL_DEF_HOLD_MARGIN 3000
+#define CAL_MIN_TRIG_HOLD_GAP 500 /* tối thiểu (trig_margin - hold_margin) */
 
 static uint32_t s_cal_trigger[LD2420_NUM_GATES];
 static uint32_t s_cal_hold[LD2420_NUM_GATES];
@@ -40,7 +47,9 @@ static void print_help(void)
     printf("  radar timeout <seconds>\n");
     printf("  radar thresh <gate 0-15> <trigger> <hold>\n");
     printf("  radar cal_thres <seconds> [trig_margin] [hold_margin]\n");
-    printf("      (switches UART to energy mode for sampling, then back to text)\n");
+    printf("      (default +%d / +%d, gap %d; ví dụ: cal_thres 30 2500 1400)\n",
+           CAL_DEF_TRIG_MARGIN, CAL_DEF_HOLD_MARGIN,
+           CAL_DEF_TRIG_MARGIN - CAL_DEF_HOLD_MARGIN);
     printf("  radar apply_thres [start_gate] [end_gate]\n");
     printf("  radar factory_thres\n");
     printf("  radar uart_mode energy|simple\n");
@@ -168,6 +177,15 @@ static void exec_radar(int argc, char **argv)
         }
         if (trig_margin < 0 || hold_margin < 0) {
             printf("margins must be >= 0\n");
+            return;
+        }
+        if (hold_margin > trig_margin) {
+            printf("hold_margin must be <= trig_margin\n");
+            return;
+        }
+        if (trig_margin - hold_margin < CAL_MIN_TRIG_HOLD_GAP) {
+            printf("trig_margin - hold_margin must be >= %d (hysteresis; too close = noisy flip)\n",
+                   CAL_MIN_TRIG_HOLD_GAP);
             return;
         }
 
